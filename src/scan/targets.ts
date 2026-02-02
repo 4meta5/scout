@@ -54,6 +54,14 @@ async function fileExists(path: string): Promise<boolean> {
 }
 
 /**
+ * Rounds confidence to 2 decimal places to avoid floating point artifacts.
+ * e.g., 0.4 + 0.2 = 0.6000000000000001 becomes 0.6
+ */
+function roundConfidence(n: number): number {
+  return Math.round(n * 100) / 100
+}
+
+/**
  * Detects MCP server targets.
  */
 async function detectMcpServer(
@@ -100,7 +108,7 @@ async function detectMcpServer(
 
   return {
     kind: 'mcp-server',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }
@@ -150,7 +158,7 @@ function detectCli(
 
   return {
     kind: 'cli',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }
@@ -195,7 +203,7 @@ async function detectSkill(
 
   return {
     kind: 'skill',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }
@@ -240,7 +248,7 @@ async function detectHook(
 
   return {
     kind: 'hook',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }
@@ -285,7 +293,7 @@ async function detectPlugin(
 
   return {
     kind: 'plugin',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }
@@ -332,7 +340,7 @@ function detectLibrary(
 
   return {
     kind: 'library',
-    confidence: Math.min(confidence, 1),
+    confidence: roundConfidence(Math.min(confidence, 1)),
     signals,
     searchHints,
   }

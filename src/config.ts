@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { readFile } from 'node:fs/promises'
+import { execa } from 'execa'
 
 /**
  * Zod schema for the github configuration section.
@@ -134,14 +135,34 @@ async function readConfigFile(path: string): Promise<PartialScoutConfig | undefi
 }
 
 /**
+ * Attempts to get GitHub token from gh CLI.
+ * Returns undefined if gh is not installed or not authenticated.
+ */
+async function getGhCliToken(): Promise<string | undefined> {
+  try {
+    const result = await execa('gh', ['auth', 'token'], { reject: false })
+    if (result.exitCode === 0 && result.stdout.trim()) {
+      return result.stdout.trim()
+    }
+  } catch {
+    // gh CLI not installed or other error
+  }
+  return undefined
+}
+
+/**
  * Extracts config values from environment variables.
  * Supports GITHUB_TOKEN and SCOUT_* variables.
+ * Falls back to gh CLI token if GITHUB_TOKEN is not set.
  */
-function getEnvConfig(): PartialScoutConfig {
+async function getEnvConfig(): Promise<PartialScoutConfig> {
   const config: PartialScoutConfig = {}
 
-  // GitHub token from environment
-  const githubToken = process.env['GITHUB_TOKEN']
+  // GitHub token from environment, with gh CLI fallback
+  let githubToken = process.env['GITHUB_TOKEN']
+  if (githubToken === undefined) {
+    githubToken = await getGhCliToken()
+  }
   if (githubToken !== undefined) {
     config.github = { token: githubToken }
   }
@@ -362,8 +383,8 @@ export async function loadConfig(projectRoot?: string): Promise<ScoutConfig> {
   const globalConfig = await readConfigFile(getConfigPath('global'))
   const projectConfig = await readConfigFile(getConfigPath('project', projectRoot))
 
-  // Get config from environment
-  const envConfig = getEnvConfig()
+  // Get config from environment (with gh CLI fallback for token)
+  const envConfig = await getEnvConfig()
 
   // Merge configs (later configs override earlier ones)
   const merged = deepMerge(globalConfig, projectConfig, envConfig)
