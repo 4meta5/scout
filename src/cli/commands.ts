@@ -3,7 +3,7 @@
  * All 6 commands with their flags as specified in the plan
  */
 
-import { buildCommand } from '@stricli/core'
+import { buildCommand, buildRouteMap } from '@stricli/core'
 
 /**
  * Scan command - Scan a local project to fingerprint its targets
@@ -194,5 +194,245 @@ export const compareCommand = buildCommand({
   async func(flags) {
     const { runCompare } = await import('../commands/compare.js')
     await runCompare(flags)
+  },
+})
+
+/**
+ * Track command - Add validated repos to watch list
+ * scout track [--validated <path>] [--repo owner/name] [--all] [--list]
+ */
+export const trackCommand = buildCommand({
+  docs: { brief: 'Add validated repos to the watch list for change tracking' },
+  parameters: {
+    flags: {
+      validated: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Path to validate-summary.json',
+        optional: true,
+      },
+      repo: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Track a specific repo by name (owner/name)',
+        optional: true,
+      },
+      all: {
+        kind: 'boolean',
+        brief: 'Track all repos in the validation summary',
+        optional: true,
+      },
+      list: {
+        kind: 'boolean',
+        brief: 'List currently tracked repos',
+        optional: true,
+      },
+    },
+  },
+  async func(flags) {
+    const { runTrack } = await import('../commands/track.js')
+    await runTrack(flags)
+  },
+})
+
+/**
+ * Watch command - Fetch updates and detect changes
+ * scout watch [--repo owner/name] [--all]
+ */
+export const watchCommand = buildCommand({
+  docs: { brief: 'Fetch updates for tracked repos and detect changes' },
+  parameters: {
+    flags: {
+      repo: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Fetch a specific repo by name (owner/name)',
+        optional: true,
+      },
+      all: {
+        kind: 'boolean',
+        brief: 'Fetch all tracked repos',
+        optional: true,
+      },
+    },
+  },
+  async func(flags) {
+    const { runWatch } = await import('../commands/watch.js')
+    await runWatch(flags)
+  },
+})
+
+/**
+ * Watch run-once command - process tracked repos for review sessions
+ * scout watch run-once [--since-last]
+ */
+export const watchRunOnceCommand = buildCommand({
+  docs: { brief: 'Run watch once to create review sessions' },
+      parameters: {
+        flags: {
+          sinceLast: {
+            kind: 'boolean',
+            brief: 'Only process changes since the last snapshot',
+            optional: true,
+          },
+          autoReview: {
+            kind: 'boolean',
+            brief: 'Automatically launch differential review for new sessions',
+            optional: true,
+          },
+          json: {
+            kind: 'boolean',
+            brief: 'Output JSON',
+            optional: true,
+          },
+          format: {
+            kind: 'parsed',
+            parse: String,
+            brief: 'Output format (json)',
+            optional: true,
+          },
+        },
+      },
+  async func(flags) {
+    const { runWatchRunOnce } = await import('../commands/watch-run-once.js')
+    await runWatchRunOnce(flags)
+  },
+})
+
+/**
+ * Watch route map
+ * scout watch --all
+ * scout watch --repo owner/name
+ * scout watch run-once [--since-last]
+ */
+export const watchRoutes = buildRouteMap({
+  routes: {
+    fetch: watchCommand,
+    'run-once': watchRunOnceCommand,
+    add: buildCommand({
+      docs: { brief: 'Add a repo to the V2 watch list' },
+      parameters: {
+        flags: {
+          repo: { kind: 'parsed', parse: String, brief: 'Repository name (owner/repo)', optional: false },
+          targetKind: { kind: 'parsed', parse: String, brief: 'Target component kind', optional: true },
+          'target-kind': { kind: 'parsed', parse: String, brief: 'Target component kind', optional: true },
+          paths: { kind: 'parsed', parse: (value: string) => value, brief: 'Tracked path (repeatable)', optional: false, variadic: true },
+          intervalHours: { kind: 'parsed', parse: Number, brief: 'Polling interval in hours', optional: true },
+          'interval-hours': { kind: 'parsed', parse: Number, brief: 'Polling interval in hours', optional: true },
+        },
+      },
+      async func(flags) {
+        const { runWatchAdd } = await import('../commands/watch-track.js')
+        await runWatchAdd(flags as { repo: string; targetKind: string; paths: string[]; intervalHours?: number })
+      },
+    }),
+    list: buildCommand({
+      docs: { brief: 'List V2 watch tracked entries' },
+      parameters: {
+        flags: {
+          json: { kind: 'boolean', brief: 'Output JSON', optional: true },
+          format: { kind: 'parsed', parse: String, brief: 'Output format (json)', optional: true },
+        },
+      },
+      async func(flags) {
+        const { runWatchList } = await import('../commands/watch-track.js')
+        await runWatchList(flags)
+      },
+    }),
+    remove: buildCommand({
+      docs: { brief: 'Remove a repo from the V2 watch list' },
+      parameters: {
+        flags: {
+          repo: { kind: 'parsed', parse: String, brief: 'Repository name (owner/repo)', optional: false },
+          targetKind: { kind: 'parsed', parse: String, brief: 'Target component kind', optional: true },
+          'target-kind': { kind: 'parsed', parse: String, brief: 'Target component kind', optional: true },
+        },
+      },
+      async func(flags) {
+        const { runWatchRemove } = await import('../commands/watch-track.js')
+        await runWatchRemove(flags as { repo: string; targetKind: string })
+      },
+    }),
+  },
+  defaultCommand: 'fetch',
+  docs: { brief: 'Watch tracked repos for changes' },
+})
+
+/**
+ * Session command - Generate review session directories
+ * scout session --repo <owner/repo> [--kind <component>] [--max-tokens N] [--out dir]
+ */
+export const sessionCommand = buildCommand({
+  docs: { brief: 'Generate a review session directory for differential security review' },
+  parameters: {
+    flags: {
+      repo: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Repository name (owner/repo)',
+        optional: false,
+      },
+      kind: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Target component kind for scoped review',
+        optional: true,
+      },
+      maxTokens: {
+        kind: 'parsed',
+        parse: Number,
+        brief: 'Maximum tokens per chunk (default: 50000)',
+        optional: true,
+      },
+      out: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Custom output directory',
+        optional: true,
+      },
+    },
+  },
+  async func(flags) {
+    const { runSession } = await import('../commands/session.js')
+    await runSession(flags as { repo: string; kind?: string; maxTokens?: number; out?: string })
+  },
+})
+
+/**
+ * Review command - Launch claude CLI for review
+ * scout review run --session <path>
+ * scout review skip --session <path>
+ * scout review list
+ */
+export const reviewCommand = buildCommand({
+  docs: { brief: 'Run differential security review with claude CLI' },
+  parameters: {
+    flags: {
+      session: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Path to the session directory',
+        optional: true,
+      },
+      run: {
+        kind: 'boolean',
+        brief: 'Run the review (default when session provided)',
+        optional: true,
+      },
+      skip: {
+        kind: 'boolean',
+        brief: 'Skip the review session',
+        optional: true,
+      },
+      list: {
+        kind: 'boolean',
+        brief: 'List pending reviews',
+        optional: true,
+      },
+    },
+  },
+  async func(flags) {
+    const { runReview } = await import('../commands/review.js')
+    await runReview(flags)
   },
 })

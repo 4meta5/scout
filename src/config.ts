@@ -73,6 +73,20 @@ export const RateLimitConfigSchema = z.object({
 })
 
 /**
+ * Zod schema for the watch mode configuration section.
+ */
+export const WatchConfigSchema = z.object({
+  /** Maximum tokens per diff chunk for review sessions */
+  maxTokens: z.number().int().positive().default(50000),
+  /** Maximum files per diff chunk */
+  maxFilesPerChunk: z.number().int().positive().default(20),
+  /** Additional file patterns to exclude from diffs */
+  excludePatterns: z.array(z.string()).default([]),
+  /** Review timeout in milliseconds (default: 30 minutes) */
+  reviewTimeoutMs: z.number().int().positive().default(30 * 60 * 1000),
+})
+
+/**
  * Complete Zod schema for Scout configuration.
  */
 export const ScoutConfigSchema = z.object({
@@ -82,6 +96,7 @@ export const ScoutConfigSchema = z.object({
   focus: FocusConfigSchema.default({}),
   caching: CachingConfigSchema.default({}),
   rateLimit: RateLimitConfigSchema.default({}),
+  watch: WatchConfigSchema.default({}),
 })
 
 /**

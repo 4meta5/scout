@@ -2,6 +2,18 @@
 
 > One-shot OSS comparison CLI that finds actively maintained repos implementing similar components/patterns.
 
+## Current Sprint
+- None.
+
+## Completed
+- [x] V2 watch schema and helpers (2026-02-02)
+- [x] `watch run-once` with real session generation and auto-review (2026-02-02)
+- [x] V2 watch add/list/remove commands with JSON output (2026-02-02)
+- [x] Watch list format alias and table header output (2026-02-02)
+- [x] Kebab-case flag support for watch add/remove (2026-02-02)
+- [x] Watch JSON output schema docs and examples (2026-02-02)
+- [x] `watch run-once` JSON output alias test (2026-02-02)
+
 ## Overview
 
 Scout is a TypeScript CLI that:

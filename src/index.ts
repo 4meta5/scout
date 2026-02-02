@@ -59,3 +59,9 @@ export {
 // Re-export report utilities
 export { generateReport, loadFingerprint, loadFocusIndex } from './report/generator.js'
 export { formatReportMd, formatTerminalSummary } from './report/markdown.js'
+
+// Re-export watch utilities
+export * from './watch/index.js'
+
+// Re-export review utilities
+export * from './review/index.js'

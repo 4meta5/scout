@@ -73,6 +73,87 @@ npx @4meta5/scout scan
 | `focus` | Generate context bundles | `FOCUS.md` per repo |
 | `compare` | Create comparison report | `REPORT.md`, `report.json` |
 
+## Watch (V2)
+
+Track validated repos over time and generate differential review sessions.
+
+```bash
+# Add a repo to watch (repeat --paths as needed)
+scout watch add --repo owner/repo --target-kind cli --paths src/cli --paths src/bin
+# JSON output
+scout watch add --repo owner/repo --target-kind cli --paths src/cli --json
+
+# List tracked entries (JSON output)
+scout watch list --json
+# or
+scout watch list --format json
+
+# Remove a tracked entry
+scout watch remove --repo owner/repo --target-kind cli
+# JSON output
+scout watch remove --repo owner/repo --target-kind cli --json
+
+# Run watch once (optionally auto-review)
+scout watch run-once --since-last --auto-review
+# JSON output
+scout watch run-once --json
+```
+
+Notes:
+- Flags accept both `--targetKind` and `--target-kind` (same for `--intervalHours` / `--interval-hours`).
+- `--json` or `--format json` prints machine-readable output for `watch add/list/remove/run-once`.
+
+### Watch JSON Output
+
+`watch add --json`:
+```json
+{
+  "action": "add",
+  "repo": "owner/repo",
+  "repoUrl": "https://github.com/owner/repo.git",
+  "targetKind": "cli",
+  "paths": ["src/cli"],
+  "intervalHours": 24
+}
+```
+
+`watch list --json`:
+```json
+[
+  {
+    "repoFullName": "owner/repo",
+    "repoUrl": "https://github.com/owner/repo.git",
+    "targetKind": "cli",
+    "trackedPaths": ["src/cli", "src/bin"],
+    "enabled": true,
+    "intervalHours": 24
+  }
+]
+```
+
+`watch remove --json`:
+```json
+{
+  "action": "remove",
+  "repo": "owner/repo",
+  "targetKind": "cli",
+  "removed": true
+}
+```
+
+`watch run-once --json`:
+```json
+{
+  "sessionPath": "/path/to/session",
+  "driftFlag": false,
+  "diffStats": {
+    "filesChanged": 1,
+    "insertions": 2,
+    "deletions": 3
+  }
+}
+```
+
 ## How Scoring Works
 
 Scout uses a two-tier scoring system.

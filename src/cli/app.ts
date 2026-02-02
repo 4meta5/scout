@@ -12,6 +12,10 @@ import {
   validateCommand,
   focusCommand,
   compareCommand,
+  trackCommand,
+  watchRoutes,
+  sessionCommand,
+  reviewCommand,
 } from './commands.js'
 
 const routes = buildRouteMap({
@@ -22,6 +26,10 @@ const routes = buildRouteMap({
     validate: validateCommand,
     focus: focusCommand,
     compare: compareCommand,
+    track: trackCommand,
+    watch: watchRoutes,
+    session: sessionCommand,
+    review: reviewCommand,
   },
   docs: {
     brief: 'Scout CLI - Find actively maintained OSS implementing similar patterns',

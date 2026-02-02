@@ -1,4 +1,22 @@
 ## Installed Skills
+- @.claude/skills/sync-test-skill-lxixko/SKILL.md
+- @.claude/skills/sync-test-skill-r1fyhd/SKILL.md
+- @.claude/skills/sync-test-skill-9yt93c/SKILL.md
+- @.claude/skills/sync-test-skill-qsesmn/SKILL.md
+- @.claude/skills/sync-test-skill-7hsz00/SKILL.md
+- @.claude/skills/sync-test-skill-qdk7mf/SKILL.md
+- @.claude/skills/sync-test-skill-306mwq/SKILL.md
+- @.claude/skills/sync-test-skill-yozi6o/SKILL.md
+- @.claude/skills/sync-test-skill-8f93lm/SKILL.md
+- @.claude/skills/sync-test-skill-q604ch/SKILL.md
+- @.claude/skills/sync-test-skill-l8wsae/SKILL.md
+- @.claude/skills/sync-test-skill-ico1fp/SKILL.md
+- @.claude/skills/test-skill-1770054963683/SKILL.md
+- @.claude/skills/test-skill-1770054963534/SKILL.md
+- @.claude/skills/test-skill-1770054963379/SKILL.md
+- @.claude/skills/test-skill-1770054916239/SKILL.md
+- @.claude/skills/test-skill-1770054916092/SKILL.md
+- @.claude/skills/test-skill-1770054915906/SKILL.md
 - @.claude/skills/doc-maintenance/SKILL.md
 - @.claude/skills/repo-hygiene/SKILL.md
 - @.claude/skills/suggest-tests/SKILL.md
