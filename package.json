@@ -1,0 +1,48 @@
+{
+  "name": "@4meta5/scout",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "One-shot OSS comparison CLI that finds actively maintained repos implementing similar components/patterns",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "scout": "dist/cli/app.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "cli",
+    "oss",
+    "github",
+    "discovery",
+    "comparison"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@stricli/core": "^1.0.0",
+    "@octokit/rest": "^21.0.0",
+    "execa": "^9.0.0",
+    "zod": "^3.23.0",
+    "env-paths": "^3.0.0",
+    "ts-pattern": "^5.0.0",
+    "neverthrow": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0",
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
