@@ -1,6 +1,6 @@
 {
   "name": "@4meta5/scout",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "One-shot OSS comparison CLI that finds actively maintained repos implementing similar components/patterns",
   "main": "dist/index.js",
