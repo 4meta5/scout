@@ -15,9 +15,12 @@
   ],
   "scripts": {
     "build": "tsc",
+    "build:all": "pnpm -r build",
     "test": "vitest run",
+    "test:all": "pnpm -r test",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "typecheck:all": "pnpm -r typecheck",
     "lint": "eslint src/",
     "prepublishOnly": "npm run build"
   },
@@ -33,19 +36,15 @@
   "dependencies": {
     "@octokit/rest": "^21.0.0",
     "@stricli/core": "^1.0.0",
-    "better-sqlite3": "^12.6.2",
     "env-paths": "^3.0.0",
     "execa": "^9.0.0",
     "neverthrow": "^8.0.0",
-    "proper-lockfile": "^4.1.2",
     "ts-pattern": "^5.0.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.0.0",
-    "@types/proper-lockfile": "^4.1.4",
     "eslint": "^9.0.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0",

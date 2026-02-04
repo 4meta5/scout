@@ -65,26 +65,6 @@ export async function shallowClone(
 }
 
 /**
- * Updates a shallow clone to latest if already cached.
- */
-export async function updateShallowClone(repoPath: string): Promise<string> {
-  await execa('git', [
-    ...GIT_SAFE_OPTIONS,
-    'fetch',
-    '--depth', '1',
-  ], { cwd: repoPath })
-
-  await execa('git', [
-    ...GIT_SAFE_OPTIONS,
-    'reset',
-    '--hard',
-    'origin/HEAD',
-  ], { cwd: repoPath })
-
-  return getHeadSha(repoPath)
-}
-
-/**
  * Converts a GitHub URL to SSH or HTTPS format.
  */
 export function normalizeGitUrl(input: string): string {

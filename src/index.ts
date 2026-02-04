@@ -60,8 +60,16 @@ export {
 export { generateReport, loadFingerprint, loadFocusIndex } from './report/generator.js'
 export { formatReportMd, formatTerminalSummary } from './report/markdown.js'
 
-// Re-export watch utilities
-export * from './watch/index.js'
-
-// Re-export review utilities
-export * from './review/index.js'
+/**
+ * Check if @4meta5/scout-watch is available.
+ * Watch/review features are provided by the optional @4meta5/scout-watch package.
+ */
+export async function isScoutWatchAvailable(): Promise<boolean> {
+  try {
+    // @ts-expect-error - Optional package may not be installed
+    await import('@4meta5/scout-watch')
+    return true
+  } catch {
+    return false
+  }
+}

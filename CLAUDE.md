@@ -1,4 +1,7 @@
 ## Installed Skills
+- @.claude/skills/sync-test-skill-ezf6d6/SKILL.md
+- @.claude/skills/sync-test-skill-q5lsi6/SKILL.md
+- @.claude/skills/sync-test-skill-bx7vr4/SKILL.md
 - @.claude/skills/sync-test-skill-lxixko/SKILL.md
 - @.claude/skills/sync-test-skill-r1fyhd/SKILL.md
 - @.claude/skills/sync-test-skill-9yt93c/SKILL.md

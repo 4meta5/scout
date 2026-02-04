@@ -1,8 +1,11 @@
 node_modules/
 dist/
+packages/*/dist/
+packages/*/node_modules/
 *.log
 .env
 .DS_Store
 coverage/
 .scout/
 *.tgz
+.claude/skills/

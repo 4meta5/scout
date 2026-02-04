@@ -3,12 +3,9 @@
  * @module commands/watch-run-once
  */
 
-import { runWatchOnce } from '../watch/run-once.js'
-import { closeDb } from '../watch/db.js'
-import { fetchRemoteHead } from '../watch/remote.js'
-import { createWatchSession } from '../watch/session-watch.js'
 import { loadConfig } from '../config.js'
-import { launchReview } from '../review/launcher.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface WatchRunOnceFlags {
   sinceLast?: boolean
@@ -18,31 +15,41 @@ export interface WatchRunOnceFlags {
 }
 
 export async function runWatchRunOnce(flags: WatchRunOnceFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('watch')
+
   try {
     const config = await loadConfig(process.cwd())
     const watchConfig = config.watch
     const useJson = flags.json === true || flags.format === 'json'
 
-    await runWatchOnce({
+    await watch.runWatchOnce({
       sinceLast: flags.sinceLast === true,
       autoReview: flags.autoReview === true,
-      fetchHead: async (repo) => fetchRemoteHead(repo.url),
-      onSessionCreated: async (sessionPath) => {
+      fetchHead: async (repo: { url: string }) => watch.fetchRemoteHead(repo.url),
+      onSessionCreated: async (sessionPath: string) => {
         if (useJson) {
           console.log(JSON.stringify({
             sessionPath,
           }))
         }
         if (flags.autoReview === true) {
-          await launchReview({
+          await watch.launchReview({
             sessionPath,
             interactive: false,
             timeout: watchConfig.reviewTimeoutMs,
           })
         }
       },
-      createSession: async (input) => {
-        const result = await createWatchSession({
+      createSession: async (input: {
+        repoFullName: string
+        repoUrl: string
+        fromSha: string
+        toSha: string
+        targetKind: string
+        trackedPaths: string[]
+      }) => {
+        const result = await watch.createWatchSession({
           repoFullName: input.repoFullName,
           repoUrl: input.repoUrl,
           oldSha: input.fromSha,
@@ -64,6 +71,6 @@ export async function runWatchRunOnce(flags: WatchRunOnceFlags): Promise<void> {
       },
     })
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

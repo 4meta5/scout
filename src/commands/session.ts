@@ -9,10 +9,9 @@
  */
 
 import { resolve } from 'node:path'
-import { generateSession } from '../watch/session.js'
-import { withWatchLock } from '../watch/lock.js'
-import { closeDb } from '../watch/db.js'
 import type { ComponentKind } from '../schemas/targets.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface SessionFlags {
   repo: string
@@ -24,6 +23,9 @@ export interface SessionFlags {
 const validKinds: ComponentKind[] = ['mcp-server', 'cli', 'skill', 'hook', 'plugin', 'library']
 
 export async function runSession(flags: SessionFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('session')
+
   try {
     const repo = flags.repo
 
@@ -31,18 +33,18 @@ export async function runSession(flags: SessionFlags): Promise<void> {
     let targetKind: ComponentKind | undefined
     if (flags.kind !== undefined) {
       if (!validKinds.includes(flags.kind as ComponentKind)) {
-        console.error(`❌ Invalid component kind: ${flags.kind}`)
+        console.error(`Invalid component kind: ${flags.kind}`)
         console.error(`   Valid kinds: ${validKinds.join(', ')}`)
         process.exit(1)
       }
       targetKind = flags.kind as ComponentKind
     }
 
-    console.log(`📁 Generating review session for ${repo}...`)
+    console.log(`Generating review session for ${repo}...`)
 
-    await withWatchLock(async () => {
+    await watch.withWatchLock(async () => {
       try {
-        const result = await generateSession({
+        const result = await watch.generateSession({
           repo,
           targetKind,
           maxTokens: flags.maxTokens,
@@ -50,7 +52,7 @@ export async function runSession(flags: SessionFlags): Promise<void> {
         })
 
         if (!result.isNew) {
-          console.log(`ℹ️  Session already exists:`)
+          console.log(`Session already exists:`)
           console.log(`   ${result.sessionPath}`)
           console.log('')
           console.log('Run the review with:')
@@ -59,15 +61,15 @@ export async function runSession(flags: SessionFlags): Promise<void> {
         }
 
         console.log('')
-        console.log('✅ Session created:')
+        console.log('Session created:')
         console.log(`   ${result.sessionPath}`)
         console.log('')
         console.log('Session details:')
-        console.log(`   SHA range: ${result.oldSha.slice(0, 7)} → ${result.newSha.slice(0, 7)}`)
+        console.log(`   SHA range: ${result.oldSha.slice(0, 7)} -> ${result.newSha.slice(0, 7)}`)
         console.log(`   Chunks: ${result.chunkCount}`)
         console.log(`   Tokens: ~${result.estimatedTokens}`)
         if (result.hasDrift) {
-          console.log('   ⚠️  Drift detected (see DRIFT.md)')
+          console.log('   Warning: Drift detected (see DRIFT.md)')
         }
         console.log('')
         console.log('Session contents:')
@@ -86,11 +88,11 @@ export async function runSession(flags: SessionFlags): Promise<void> {
         console.log(`  scout review run --session ${result.sessionPath}`)
 
       } catch (error) {
-        console.error(`❌ ${error instanceof Error ? error.message : 'Unknown error'}`)
+        console.error(`${error instanceof Error ? error.message : 'Unknown error'}`)
         process.exit(1)
       }
     })
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

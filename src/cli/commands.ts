@@ -165,7 +165,7 @@ export const focusCommand = buildCommand({
 
 /**
  * Compare command - Generate comparison report
- * scout compare [--validated <validate-summary.json>] [--focus <focus-index>] [--out <dir>]
+ * scout compare [--validated <validate-summary.json>] [--focus <focus-index>] [--out <dir>] [--digest]
  */
 export const compareCommand = buildCommand({
   docs: { brief: 'Generate comparison report between target and alternatives' },
@@ -189,6 +189,11 @@ export const compareCommand = buildCommand({
         brief: 'Output directory',
         optional: true,
       },
+      digest: {
+        kind: 'boolean',
+        brief: 'Generate compact digest format (1-2 pages) instead of full report',
+        optional: true,
+      },
     },
   },
   async func(flags) {
@@ -202,7 +207,7 @@ export const compareCommand = buildCommand({
  * scout track [--validated <path>] [--repo owner/name] [--all] [--list]
  */
 export const trackCommand = buildCommand({
-  docs: { brief: 'Add validated repos to the watch list for change tracking' },
+  docs: { brief: '[experimental] Add validated repos to the watch list for change tracking' },
   parameters: {
     flags: {
       validated: {
@@ -240,7 +245,7 @@ export const trackCommand = buildCommand({
  * scout watch [--repo owner/name] [--all]
  */
 export const watchCommand = buildCommand({
-  docs: { brief: 'Fetch updates for tracked repos and detect changes' },
+  docs: { brief: '[experimental] Fetch updates for tracked repos and detect changes' },
   parameters: {
     flags: {
       repo: {
@@ -267,7 +272,7 @@ export const watchCommand = buildCommand({
  * scout watch run-once [--since-last]
  */
 export const watchRunOnceCommand = buildCommand({
-  docs: { brief: 'Run watch once to create review sessions' },
+  docs: { brief: '[experimental] Run watch once to create review sessions' },
       parameters: {
         flags: {
           sinceLast: {
@@ -310,7 +315,7 @@ export const watchRoutes = buildRouteMap({
     fetch: watchCommand,
     'run-once': watchRunOnceCommand,
     add: buildCommand({
-      docs: { brief: 'Add a repo to the V2 watch list' },
+      docs: { brief: '[experimental] Add a repo to the watch list' },
       parameters: {
         flags: {
           repo: { kind: 'parsed', parse: String, brief: 'Repository name (owner/repo)', optional: false },
@@ -327,7 +332,7 @@ export const watchRoutes = buildRouteMap({
       },
     }),
     list: buildCommand({
-      docs: { brief: 'List V2 watch tracked entries' },
+      docs: { brief: '[experimental] List watch tracked entries' },
       parameters: {
         flags: {
           json: { kind: 'boolean', brief: 'Output JSON', optional: true },
@@ -340,7 +345,7 @@ export const watchRoutes = buildRouteMap({
       },
     }),
     remove: buildCommand({
-      docs: { brief: 'Remove a repo from the V2 watch list' },
+      docs: { brief: '[experimental] Remove a repo from the watch list' },
       parameters: {
         flags: {
           repo: { kind: 'parsed', parse: String, brief: 'Repository name (owner/repo)', optional: false },
@@ -355,7 +360,7 @@ export const watchRoutes = buildRouteMap({
     }),
   },
   defaultCommand: 'fetch',
-  docs: { brief: 'Watch tracked repos for changes' },
+  docs: { brief: '[experimental] Watch tracked repos for changes' },
 })
 
 /**
@@ -363,7 +368,7 @@ export const watchRoutes = buildRouteMap({
  * scout session --repo <owner/repo> [--kind <component>] [--max-tokens N] [--out dir]
  */
 export const sessionCommand = buildCommand({
-  docs: { brief: 'Generate a review session directory for differential security review' },
+  docs: { brief: '[experimental] Generate a review session directory for differential security review' },
   parameters: {
     flags: {
       repo: {
@@ -405,7 +410,7 @@ export const sessionCommand = buildCommand({
  * scout review list
  */
 export const reviewCommand = buildCommand({
-  docs: { brief: 'Run differential security review with claude CLI' },
+  docs: { brief: '[experimental] Run differential security review with claude CLI' },
   parameters: {
     flags: {
       session: {

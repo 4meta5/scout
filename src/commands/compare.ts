@@ -16,6 +16,7 @@ import {
   loadFocusIndex,
 } from '../report/generator.js'
 import { formatReportMd, formatTerminalSummary } from '../report/markdown.js'
+import { formatDigestMd, toDigestJson } from '../report/digest.js'
 import {
   ValidationSummarySchema,
   CandidatesTier1Schema,
@@ -27,6 +28,7 @@ export interface CompareFlags {
   validated?: string
   focus?: string
   out?: string
+  digest?: boolean
 }
 
 export async function runCompare(flags: CompareFlags): Promise<void> {
@@ -83,10 +85,34 @@ export async function runCompare(flags: CompareFlags): Promise<void> {
     runId
   )
 
-  // Validate and write report.json
+  // Validate report
   const validatedReport = CompareReportSchema.parse(report)
   await mkdir(outputDir, { recursive: true })
 
+  // Digest mode: compact output
+  if (flags.digest === true) {
+    const digestJsonPath = join(outputDir, 'digest.json')
+    await writeFile(digestJsonPath, JSON.stringify(toDigestJson(validatedReport), null, 2))
+    console.log(`  → Wrote ${digestJsonPath}`)
+
+    const digestMdPath = join(outputDir, 'DIGEST.md')
+    await writeFile(digestMdPath, formatDigestMd(validatedReport))
+    console.log(`  → Wrote ${digestMdPath}`)
+
+    // Also write full JSON for reference
+    const jsonPath = join(outputDir, 'report.json')
+    await writeFile(jsonPath, JSON.stringify(validatedReport, null, 2))
+    console.log(`  → Wrote ${jsonPath}`)
+
+    // Print terminal summary
+    console.log('')
+    console.log(formatTerminalSummary(report))
+    console.log('')
+    console.log(`✅ Digest complete: ${digestMdPath}`)
+    return
+  }
+
+  // Full report mode
   const jsonPath = join(outputDir, 'report.json')
   await writeFile(jsonPath, JSON.stringify(validatedReport, null, 2))
   console.log(`  → Wrote ${jsonPath}`)

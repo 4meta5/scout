@@ -3,8 +3,9 @@
  * @module commands/watch-track
  */
 
-import { closeDb, insertRepoV2, upsertTrackedV2, listTrackedV2, removeTrackedV2 } from '../watch/db.js'
 import { normalizeGitUrl } from '../clone/hardened.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface WatchAddFlags {
   repo: string
@@ -24,6 +25,9 @@ export interface WatchRemoveFlags {
 }
 
 export async function runWatchAdd(flags: WatchAddFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('watch')
+
   try {
     const targetKind = flags.targetKind ?? flags['target-kind']
     if (targetKind === undefined) {
@@ -32,14 +36,14 @@ export async function runWatchAdd(flags: WatchAddFlags): Promise<void> {
 
     const intervalHours = flags.intervalHours ?? flags['interval-hours']
     const url = normalizeGitUrl(flags.repo)
-    const repoId = await insertRepoV2({
+    const repoId = await watch.insertRepoV2({
       fullName: flags.repo,
       url,
       defaultBranch: null,
       licenseSpdx: null,
     })
 
-    await upsertTrackedV2({
+    await watch.upsertTrackedV2({
       repoId,
       targetKind,
       trackedPaths: flags.paths,
@@ -60,7 +64,7 @@ export async function runWatchAdd(flags: WatchAddFlags): Promise<void> {
       console.log(`Added ${flags.repo} (${targetKind})`)
     }
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }
 
@@ -70,8 +74,11 @@ export interface WatchListFlags {
 }
 
 export async function runWatchList(flags: WatchListFlags = {}): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('watch')
+
   try {
-    const rows = await listTrackedV2()
+    const rows = await watch.listTrackedV2()
     if (flags.json === true || flags.format === 'json') {
       console.log(JSON.stringify(rows))
       return
@@ -87,18 +94,21 @@ export async function runWatchList(flags: WatchListFlags = {}): Promise<void> {
       console.log(`${row.repoFullName}\t${row.targetKind}\t${row.trackedPaths.join(',')}\t${row.intervalHours}\t${row.enabled}`)
     }
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }
 
 export async function runWatchRemove(flags: WatchRemoveFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('watch')
+
   try {
     const targetKind = flags.targetKind ?? flags['target-kind']
     if (targetKind === undefined) {
       throw new Error('Missing target kind')
     }
 
-    const removed = await removeTrackedV2(flags.repo, targetKind)
+    const removed = await watch.removeTrackedV2(flags.repo, targetKind)
     if (flags.json === true) {
       console.log(JSON.stringify({
         action: 'remove',
@@ -115,6 +125,6 @@ export async function runWatchRemove(flags: WatchRemoveFlags): Promise<void> {
       console.log(`No tracked entry for ${flags.repo} (${targetKind})`)
     }
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

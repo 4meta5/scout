@@ -9,18 +9,8 @@
  */
 
 import { resolve } from 'node:path'
-import {
-  launchReview,
-  skipReview,
-  isClaudeAvailable,
-  validateSession,
-} from '../review/launcher.js'
-import {
-  getPendingReviewSessions,
-  getTrackedRepoById,
-  closeDb,
-} from '../watch/db.js'
-import { withWatchLock } from '../watch/lock.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface ReviewFlags {
   session?: string
@@ -30,10 +20,13 @@ export interface ReviewFlags {
 }
 
 export async function runReview(flags: ReviewFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('review')
+
   try {
     // List pending reviews
     if (flags.list === true) {
-      const pending = await getPendingReviewSessions()
+      const pending = await watch.getPendingReviewSessions()
 
       if (pending.length === 0) {
         console.log('No pending reviews.')
@@ -43,13 +36,13 @@ export async function runReview(flags: ReviewFlags): Promise<void> {
         return
       }
 
-      console.log(`📋 Pending reviews (${pending.length}):`)
+      console.log(`Pending reviews (${pending.length}):`)
       console.log('')
 
       for (const session of pending) {
-        const repo = await getTrackedRepoById(session.repoId)
+        const repo = await watch.getTrackedRepoById(session.repoId)
         const repoName = repo?.repo ?? 'unknown'
-        const sha = `${session.oldSha.slice(0, 7)} → ${session.newSha.slice(0, 7)}`
+        const sha = `${session.oldSha.slice(0, 7)} -> ${session.newSha.slice(0, 7)}`
         const kind = session.targetKind ?? 'all'
 
         console.log(`  ${repoName} (${kind})`)
@@ -77,21 +70,21 @@ export async function runReview(flags: ReviewFlags): Promise<void> {
 
     // Skip mode
     if (flags.skip === true) {
-      await withWatchLock(async () => {
-        await skipReview(sessionPath)
-        console.log(`⏭️  Skipped review: ${sessionPath}`)
+      await watch.withWatchLock(async () => {
+        await watch.skipReview(sessionPath)
+        console.log(`Skipped review: ${sessionPath}`)
       })
       return
     }
 
-    const shouldRun = flags.run === true || (flags.run !== true && flags.skip !== true)
+    const shouldRun = flags.run !== false || (!flags.run && !flags.skip)
 
     // Run mode (default if session provided)
     if (shouldRun) {
       // Check claude availability
-      const available = await isClaudeAvailable()
+      const available = await watch.isClaudeAvailable()
       if (!available) {
-        console.error('❌ claude CLI not found')
+        console.error('claude CLI not found')
         console.error('')
         console.error('Install with:')
         console.error('  npm install -g @anthropic-ai/claude-code')
@@ -99,13 +92,13 @@ export async function runReview(flags: ReviewFlags): Promise<void> {
       }
 
       // Validate session
-      const validation = await validateSession(sessionPath)
+      const validation = await watch.validateSession(sessionPath)
       if (!validation.valid) {
-        console.error(`❌ Invalid session: ${validation.error}`)
+        console.error(`Invalid session: ${validation.error}`)
         process.exit(1)
       }
 
-      console.log(`🔍 Launching review for: ${sessionPath}`)
+      console.log(`Launching review for: ${sessionPath}`)
       console.log('')
       console.log('Claude will:')
       console.log('  1. Read REVIEW_INSTRUCTIONS.md')
@@ -115,7 +108,7 @@ export async function runReview(flags: ReviewFlags): Promise<void> {
       console.log('Starting claude...')
       console.log('')
 
-      const result = await launchReview({
+      const result = await watch.launchReview({
         sessionPath,
         interactive: true,
       })
@@ -123,17 +116,17 @@ export async function runReview(flags: ReviewFlags): Promise<void> {
       console.log('')
 
       if (result.success) {
-        console.log('✅ Review completed successfully')
+        console.log('Review completed successfully')
         console.log('')
         console.log('Review report:')
         console.log(`  ${sessionPath}/OUTPUT/DIFFERENTIAL_REVIEW_REPORT.md`)
       } else {
-        console.error(`❌ Review failed: ${result.error}`)
+        console.error(`Review failed: ${result.error}`)
         console.error(`   Exit code: ${result.exitCode}`)
         process.exit(result.exitCode)
       }
     }
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

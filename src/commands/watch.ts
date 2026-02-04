@@ -6,15 +6,8 @@
  * which repos have pending changes for review.
  */
 
-import {
-  fetchAllRepos,
-  runFetchWithLock,
-} from '../watch/fetch.js'
-import {
-  getAllTrackedRepos,
-  getTrackedRepoByName,
-  closeDb,
-} from '../watch/db.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface WatchFlags {
   repo?: string
@@ -22,36 +15,38 @@ export interface WatchFlags {
 }
 
 export async function runWatch(flags: WatchFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('watch')
+
   try {
-    await runFetchWithLock(async () => {
+    await watch.runFetchWithLock(async () => {
       // Fetch single repo if specified
       if (flags.repo !== undefined) {
-        const tracked = await getTrackedRepoByName(flags.repo)
+        const tracked = await watch.getTrackedRepoByName(flags.repo)
 
         if (tracked === null) {
-          console.error(`❌ Error: Repo "${flags.repo}" is not tracked`)
+          console.error(`Error: Repo "${flags.repo}" is not tracked`)
           console.error('   Track it first with: scout track --repo ' + flags.repo)
           process.exit(1)
         }
 
-        console.log(`🔄 Fetching updates for ${flags.repo}...`)
-        const { fetchRepo } = await import('../watch/fetch.js')
-        const result = await fetchRepo(tracked)
+        console.log(`Fetching updates for ${flags.repo}...`)
+        const result = await watch.fetchRepo(tracked)
 
         if (result.error !== undefined) {
-          console.error(`❌ Error fetching ${result.repo}: ${result.error}`)
+          console.error(`Error fetching ${result.repo}: ${result.error}`)
           process.exit(1)
         }
 
         if (result.hasChanges) {
-          console.log(`⚡ Changes detected!`)
+          console.log(`Changes detected!`)
           console.log(`   Old: ${result.oldSha?.slice(0, 7) ?? 'unknown'}`)
           console.log(`   New: ${result.newSha.slice(0, 7)}`)
           console.log('')
           console.log('Generate review session with:')
           console.log(`  scout session ${result.repo}`)
         } else {
-          console.log(`✓ No changes since last fetch`)
+          console.log(`No changes since last fetch`)
           console.log(`   SHA: ${result.newSha.slice(0, 7)}`)
         }
         return
@@ -64,7 +59,7 @@ export async function runWatch(flags: WatchFlags): Promise<void> {
         return
       }
 
-      const repos = await getAllTrackedRepos()
+      const repos = await watch.getAllTrackedRepos()
 
       if (repos.length === 0) {
         console.log('No repos currently tracked.')
@@ -74,28 +69,29 @@ export async function runWatch(flags: WatchFlags): Promise<void> {
         return
       }
 
-      console.log(`🔄 Fetching updates for ${repos.length} tracked repos...`)
+      console.log(`Fetching updates for ${repos.length} tracked repos...`)
       console.log('')
 
-      const results = await fetchAllRepos()
+      const results = await watch.fetchAllRepos()
 
       // Report results
-      const changed = results.filter(r => r.hasChanges)
-      const unchanged = results.filter(r => !r.hasChanges && r.error === undefined)
-      const errors = results.filter(r => r.error !== undefined)
+      type FetchResult = { repo: string; hasChanges: boolean; error?: string; oldSha?: string; newSha: string }
+      const changed = results.filter((r: FetchResult) => r.hasChanges)
+      const unchanged = results.filter((r: FetchResult) => !r.hasChanges && r.error === undefined)
+      const errors = results.filter((r: FetchResult) => r.error !== undefined)
 
       for (const r of results) {
         if (r.error !== undefined) {
-          console.log(`  ❌ ${r.repo}: ${r.error}`)
+          console.log(`  [error] ${r.repo}: ${r.error}`)
         } else if (r.hasChanges) {
-          console.log(`  ⚡ ${r.repo}: ${r.oldSha?.slice(0, 7) ?? '?'} → ${r.newSha.slice(0, 7)}`)
+          console.log(`  [changed] ${r.repo}: ${r.oldSha?.slice(0, 7) ?? '?'} -> ${r.newSha.slice(0, 7)}`)
         } else {
-          console.log(`  ✓ ${r.repo}: ${r.newSha.slice(0, 7)} (no changes)`)
+          console.log(`  [ok] ${r.repo}: ${r.newSha.slice(0, 7)} (no changes)`)
         }
       }
 
       console.log('')
-      console.log('📊 Summary:')
+      console.log('Summary:')
       console.log(`  Changed:   ${changed.length}`)
       console.log(`  Unchanged: ${unchanged.length}`)
       if (errors.length > 0) {
@@ -111,6 +107,6 @@ export async function runWatch(flags: WatchFlags): Promise<void> {
       }
     })
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

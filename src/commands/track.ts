@@ -7,14 +7,8 @@
  */
 
 import { join, resolve } from 'node:path'
-import {
-  loadValidationSummary,
-  trackFromValidationSummary,
-  trackSingleRepo,
-  listTrackedRepos,
-  runTrackWithLock,
-} from '../watch/track.js'
-import { closeDb } from '../watch/db.js'
+import { requireScoutWatch } from './watch-proxy.js'
+import { warnExperimental } from './experimental-warning.js'
 
 export interface TrackFlags {
   validated?: string
@@ -24,10 +18,13 @@ export interface TrackFlags {
 }
 
 export async function runTrack(flags: TrackFlags): Promise<void> {
+  const watch = await requireScoutWatch()
+  warnExperimental('track')
+
   try {
     // List mode
     if (flags.list === true) {
-      const repos = await listTrackedRepos()
+      const repos = await watch.listTrackedRepos()
 
       if (repos.length === 0) {
         console.log('No repos currently tracked.')
@@ -37,12 +34,12 @@ export async function runTrack(flags: TrackFlags): Promise<void> {
         return
       }
 
-      console.log(`📋 Tracked repositories (${repos.length}):`)
+      console.log(`Tracked repositories (${repos.length}):`)
       console.log('')
 
       for (const repo of repos) {
         const score = Math.round(repo.tier2Score * 100)
-        const status = repo.hasChanges ? '⚡ changes pending' : '✓ up to date'
+        const status = repo.hasChanges ? '[changes pending]' : '[up to date]'
         console.log(`  ${repo.repo} (${score}%) - ${status}`)
         console.log(`    baseline: ${repo.baselineSha.slice(0, 7)}`)
         if (repo.lastSha !== null) {
@@ -62,58 +59,59 @@ export async function runTrack(flags: TrackFlags): Promise<void> {
     // Load validation summary
     let summary
     try {
-      summary = await loadValidationSummary(summaryPath)
-      console.log(`📦 Loaded validation summary: ${summary.totalValidated} repos`)
+      summary = await watch.loadValidationSummary(summaryPath)
+      console.log(`Loaded validation summary: ${summary.totalValidated} repos`)
     } catch {
-      console.error(`❌ Error: Could not load validation summary from ${summaryPath}`)
+      console.error(`Error: Could not load validation summary from ${summaryPath}`)
       console.error('   Run "scout validate" first')
       process.exit(1)
     }
 
     // Track with lock
-    await runTrackWithLock(async () => {
+    await watch.runTrackWithLock(async () => {
       // Track single repo if specified
       if (flags.repo !== undefined) {
-        const result = await trackSingleRepo(summary, flags.repo)
+        const result = await watch.trackSingleRepo(summary, flags.repo)
 
         if (result.status === 'added') {
-          console.log(`✅ Tracked: ${result.repo}`)
+          console.log(`Tracked: ${result.repo}`)
         } else if (result.status === 'exists') {
-          console.log(`ℹ️  Already tracked: ${result.repo}`)
+          console.log(`Already tracked: ${result.repo}`)
         } else {
-          console.log(`⚠️  Skipped: ${result.repo} - ${result.reason}`)
+          console.log(`Skipped: ${result.repo} - ${result.reason}`)
         }
         return
       }
 
       // Track multiple repos
       const trackAll = flags.all === true
-      const results = await trackFromValidationSummary(summary, { trackAll })
+      const results = await watch.trackFromValidationSummary(summary, { trackAll })
 
       // Report results
-      const added = results.filter(r => r.status === 'added')
-      const exists = results.filter(r => r.status === 'exists')
-      const skipped = results.filter(r => r.status === 'skipped')
+      type TrackResult = { repo: string; status: 'added' | 'exists' | 'skipped'; reason?: string }
+      const added = results.filter((r: TrackResult) => r.status === 'added')
+      const exists = results.filter((r: TrackResult) => r.status === 'exists')
+      const skipped = results.filter((r: TrackResult) => r.status === 'skipped')
 
       console.log('')
-      console.log('📊 Track results:')
+      console.log('Track results:')
 
       if (added.length > 0) {
-        console.log(`  ✅ Added: ${added.length}`)
+        console.log(`  Added: ${added.length}`)
         for (const r of added) {
           console.log(`     - ${r.repo}`)
         }
       }
 
       if (exists.length > 0) {
-        console.log(`  ℹ️  Already tracked: ${exists.length}`)
+        console.log(`  Already tracked: ${exists.length}`)
         for (const r of exists) {
           console.log(`     - ${r.repo}`)
         }
       }
 
       if (skipped.length > 0) {
-        console.log(`  ⚠️  Skipped: ${skipped.length}`)
+        console.log(`  Skipped: ${skipped.length}`)
         for (const r of skipped) {
           console.log(`     - ${r.repo}: ${r.reason}`)
         }
@@ -125,6 +123,6 @@ export async function runTrack(flags: TrackFlags): Promise<void> {
       console.log('  scout track --list   # List tracked repos')
     })
   } finally {
-    closeDb()
+    watch.closeDb()
   }
 }

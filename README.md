@@ -73,86 +73,59 @@ npx @4meta5/scout scan
 | `focus` | Generate context bundles | `FOCUS.md` per repo |
 | `compare` | Create comparison report | `REPORT.md`, `report.json` |
 
-## Watch (V2)
+### Compact Digest Mode
+
+For LLM-friendly output, use the `--digest` flag:
+
+```bash
+scout compare --digest
+```
+
+This generates a 1-2 page summary in `.scout/DIGEST.md` plus `digest.json`, suitable for Engram ingestion or Claude context windows.
+
+**Digest output structure:**
+- Top recommendation with score, license, and entry point
+- Compact alternatives table (top 5)
+- Pipeline summary (discovered → cloned → validated)
+
+## V1 Core Pipeline
+
+Scout V1 provides a stable, one-shot OSS comparison pipeline:
+
+| Command | Status | Description |
+|---------|--------|-------------|
+| `scan` | Stable | Fingerprint local project |
+| `discover` | Stable | Search GitHub for similar repos |
+| `clone` | Stable | Shallow clone top candidates |
+| `validate` | Stable | Check structural matches |
+| `focus` | Stable | Generate context bundles |
+| `compare` | Stable | Create comparison report |
+
+These 6 commands are the **V1 guarantee**. They are stable, tested, and suitable for production use.
+
+---
+
+## Experimental Features
+
+**Warning: Not part of core guarantees. May change without notice.**
+
+### Watch / Review
 
 Track validated repos over time and generate differential review sessions.
 
 ```bash
-# Add a repo to watch (repeat --paths as needed)
-scout watch add --repo owner/repo --target-kind cli --paths src/cli --paths src/bin
-# JSON output
-scout watch add --repo owner/repo --target-kind cli --paths src/cli --json
-
-# List tracked entries (JSON output)
-scout watch list --json
-# or
-scout watch list --format json
-
-# Remove a tracked entry
-scout watch remove --repo owner/repo --target-kind cli
-# JSON output
-scout watch remove --repo owner/repo --target-kind cli --json
-
-# Run watch once (optionally auto-review)
-scout watch run-once --since-last --auto-review
-# JSON output
-scout watch run-once --json
+npm install @4meta5/scout-watch
 ```
 
-Notes:
-- Flags accept both `--targetKind` and `--target-kind` (same for `--intervalHours` / `--interval-hours`).
-- `--json` or `--format json` prints machine-readable output for `watch add/list/remove/run-once`.
+Once installed, these commands become available:
 
-### Watch JSON Output
+- `scout watch add` - Add repo to tracking
+- `scout watch list` - List tracked repos
+- `scout watch remove` - Remove from tracking
+- `scout watch run-once` - Process updates
+- `scout review run` - Launch differential review
 
-`watch add --json`:
-```json
-{
-  "action": "add",
-  "repo": "owner/repo",
-  "repoUrl": "https://github.com/owner/repo.git",
-  "targetKind": "cli",
-  "paths": ["src/cli"],
-  "intervalHours": 24
-}
-```
-
-`watch list --json`:
-```json
-[
-  {
-    "repoFullName": "owner/repo",
-    "repoUrl": "https://github.com/owner/repo.git",
-    "targetKind": "cli",
-    "trackedPaths": ["src/cli", "src/bin"],
-    "enabled": true,
-    "intervalHours": 24
-  }
-]
-```
-
-`watch remove --json`:
-```json
-{
-  "action": "remove",
-  "repo": "owner/repo",
-  "targetKind": "cli",
-  "removed": true
-}
-```
-
-`watch run-once --json`:
-```json
-{
-  "sessionPath": "/path/to/session",
-  "driftFlag": false,
-  "diffStats": {
-    "filesChanged": 1,
-    "insertions": 2,
-    "deletions": 3
-  }
-}
-```
+See [@4meta5/scout-watch](https://www.npmjs.com/package/@4meta5/scout-watch) for full documentation.
 
 ## How Scoring Works
 
@@ -219,6 +192,19 @@ All outputs go to `.scout/` by default:
       PROVENANCE.md     # Source tracking
   REPORT.md             # Final comparison
   report.json           # Machine-readable report
+```
+
+## Development
+
+This is a pnpm workspace. Core package is at root, optional packages under `packages/`.
+
+```bash
+pnpm install          # Install all dependencies
+pnpm build            # Build core only
+pnpm build:all        # Build all packages
+pnpm test             # Test core only
+pnpm test:all         # Test all packages
+pnpm typecheck:all    # Type check all packages
 ```
 
 ## Requirements
